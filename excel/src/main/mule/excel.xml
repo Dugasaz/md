@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="1a1483fc-9ab8-48c3-be01-726da4c8d61e" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="a7acee20-7970-4130-b831-1f55b7345183" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="1fa215c0-e702-48b0-85b6-98f2efe83454" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="01234" database="sales" />
+	</db:config>
+	<flow name="excelFlow" doc:id="6fc3b93c-c5ca-421d-a45a-8e3e24f68b0a" >
+		<http:listener doc:name="Listener" doc:id="5a1595c0-aafb-4ec3-9ccb-f40e947912fe" config-ref="HTTP_Listener_config" path="/test"/>
+		<db:select doc:id="d650d1e5-9538-4c73-90f6-8761aa2eab83" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from customers;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="59d25152-ff13-4968-8981-3d7141d51911" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xlsx
+---
+{
+	sheet1: payload map(data)->{
+		id: data.phone[0],
+		name: data.first_name[0]
+	},
+	sheet2: payload map(data)->{
+		id: data.phone[1],
+		name: data.first_name[1]
+	},
+	sheet3: payload map(data)->{
+		id: data.phone[2],
+		name: data.first_name[2]
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="82f17a69-474d-4bb7-90a6-4d8d62bacd4b" config-ref="File_Config" path="C:\Users\Dugasa\OneDrive\Desktop\input\data.xlsx" mode="APPEND"/>
+	</flow>
+</mule>
